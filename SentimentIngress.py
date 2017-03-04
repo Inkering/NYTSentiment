@@ -14,7 +14,7 @@ import json
 
 def makeJsonRequest(queryText):
     search = queryText
-    TimesKey = "***REMOVED***"
+    TimesKey = ""
     url="http://api.nytimes.com/svc/search/v2/articlesearch.json"
     query_params={'q' : search,
                   'api-key': TimesKey,
