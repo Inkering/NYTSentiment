@@ -1,7 +1,6 @@
 #NYTSentiment
 #Sentiment analysis for the NYT
 #By Dieter Brehm
-#***REMOVED***
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -15,7 +14,7 @@ import json
 
 def makeJsonRequest(queryText):
     search = queryText
-    TimesKey = ""
+    TimesKey = "***REMOVED***"
     url="http://api.nytimes.com/svc/search/v2/articlesearch.json"
     query_params={'q' : search,
                   'api-key': TimesKey,
