@@ -3,10 +3,6 @@
 #By Dieter Brehm
 #***REMOVED***
 
-import sys
-import os
-import time
-
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from nltk.stem.porter import PorterStemmer
@@ -15,6 +11,18 @@ import nltk
 import pandas as pd
 import numpy as np
 import re
+import json
+
+def makeJsonRequest(queryText):
+    search = queryText
+    TimesKey = "***REMOVED***"
+    url="http://api.nytimes.com/svc/search/v2/articlesearch.json"
+    query_params={'q' : search,
+                  'api-key': TimesKey,
+         }
+    request = requests.get(url, params=query_params)
+    data = request.json()
+    return data
 
 def AnalyzeSentiment(testDataFile, ):
     #should be a csv file
