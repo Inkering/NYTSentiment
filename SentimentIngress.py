@@ -1,70 +1,71 @@
 #NYTSentiment
 #Sentiment analysis for the NYT
 #By Dieter Brehm
-#Training code adapted from github user bonzanini
-
+#***REMOVED***
 
 import sys
 import os
 import time
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn import svm
-from sklearn.metrics import classification_report
+
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
+from nltk.stem.porter import PorterStemmer
 import requests
-import prettytable
 import nltk
+import pandas as pd
+import numpy as np
+import re
 
-def predictSentiment(root_directory, data_input):
-    # import the data from a specified directory
-    directory = root_directory
+def AnalyzeSentiment(testDataFile, ):
+    #should be a csv file
+    #pandas really likes csv files for use in dataframes
+    testDataPath = testDataFile
 
-    # for eventual feature analysis
-    classes = ['pos', 'neg']
-    # for the learning
-    train_data = []
-    train_labels = []
+    #load in a dataset into both testing and training data frames
+    test_data_frame = pd.read_csv(testDataPath, header=None, delimiter="\t", quoting=3 )
+    test_data_frame.columns = ["Text"]
+    train_data_frame = pd.read_csv('original_train_data.csv', header=None, delimiter="\t", quoting=3 )
+    train_data_frame.columns = ["Sentiment", "Text"]
 
-    # for measuring some accuracy
-    #needs to be a list
-    test_data = []
-    #test_data.append(data_input)
-    #test_labels = []
-    #put our dataset into usable classifications
-    #dataset has the following structure
-    #root folder
-    #->negative folder
-    #->->negative text files
-    #->positive folder
-    #->-positive text files
-    for current in classes:
-        current_dir = os.path.join(directory, current)
-        #movie reviews are generally either negative OR positive
-        #listdir gives a list of the reviews in a directory
-        for review in os.listdir(current_dir):
-            #with is essentially a try statement, but simpler to use. Tries to read
-            #text files
-            with open(os.path.join(current_dir, review), 'r') as file:
-                content = file.read()
-                #most of the set is for training, but we need something to test against!
-                if review.startswith('thisSucks'):
-                    test_data.append(content)
-                else:
-                    train_data.append(content)
-                    train_labels.append(current)
-    #for our training process, we are considering words to be features
-    #This will use a library to automatically weight words based on frequency
-    #It will filter based on max and min frequency
-    print(test_data)
-    vectorizer = TfidfVectorizer(min_df=5,
-                                 max_df =0.8,
-                                 sublinear_tf=True,
-                                 use_idf=True)
-    train_vectors = vectorizer.fit_transform(train_data)
-    test_vectors = vectorizer.transform(test_data)
+    #strip all the useless punctuation and other unnecessary information
+    stemmer = PorterStemmer()
+    def stem_tokens(tokens, stemmer):
+        stemmed = []
+        for item in tokens:
+            stemmed.append(stemmer.stem(item))
+        return stemmed
 
-    #let's try to classify some text
-    classifier = svm.SVC()
-    classifier.fit(train_vectors, train_labels)
-    prediction = classifier.predict(test_vectors)
+    #make the words seperate and further remove useless items
+    def tokenize(text):
+        text = re.sub("[^a-zA-Z]", " ", text)
+        #tokens are basically seperate instances of words
+        #with them we can do things like count instances of specific words
+        #or graph average number of words per row(if there are multiple rows of text :P
+        tokens = nltk.word_tokenize(text)
+        stems = stem_tokens(tokens, stemmer)
+        return stems
 
-    print(prediction)
+    #take our tokenize function and use it on our training data set
+    vectorizer = CountVectorizer(
+        analyzer= 'word',
+        tokenizer= tokenize,
+        lowercase= True,
+        stop_words= 'english',
+        max_features= 85
+    )
+
+    #combine all the data we need to look at, training and to be predicted, into one collection
+    fit_data = vectorizer.fit_transform(train_data_frame.Text.tolist() + test_data_frame.Text.tolist())
+    fit_data = fit_data.toarray()
+
+    #predict the sentiment of unlabeled data
+    model = LogisticRegression()
+    model = model.fit(X=fit_data[0:len(train_data_frame)], y=train_data_frame.Sentiment)
+    pred = model.predict(fit_data[len(train_data_frame):])
+
+    #read each row of the text column along with the predicted sentiment
+    #1 is positive
+    #0 is negative
+    for text, sentiment in zip(test_data_frame.Text, pred):
+        print(sentiment, text)
+
